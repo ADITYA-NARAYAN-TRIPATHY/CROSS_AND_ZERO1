@@ -1,0 +1,603 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Multiplayer Tic-Tac-Toe</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            max-width: 500px;
+            width: 100%;
+            animation: fadeIn 0.5s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        h1 {
+            text-align: center;
+            color: #667eea;
+            margin-bottom: 30px;
+            font-size: 2.5em;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .menu, .game-container {
+            display: none;
+        }
+
+        .menu.active, .game-container.active {
+            display: block;
+        }
+
+        .btn {
+            width: 100%;
+            padding: 15px;
+            margin: 10px 0;
+            border: none;
+            border-radius: 10px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            font-size: 1.1em;
+            font-weight: bold;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .input-group {
+            margin: 20px 0;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #333;
+            font-weight: bold;
+        }
+
+        input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 1em;
+            transition: border-color 0.3s;
+        }
+
+        input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .board {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin: 30px 0;
+            max-width: 300px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .cell {
+            aspect-ratio: 1;
+            background: white;
+            border: 3px solid #667eea;
+            border-radius: 10px;
+            font-size: 3em;
+            font-weight: bold;
+            cursor: pointer;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            transition: all 0.3s;
+            color: #667eea;
+        }
+
+        .cell:hover:not(.taken) {
+            background: #f0f0ff;
+            transform: scale(1.05);
+        }
+
+        .cell.taken {
+            cursor: not-allowed;
+        }
+
+        .cell.x {
+            color: #667eea;
+            animation: pop 0.3s ease;
+        }
+
+        .cell.o {
+            color: #764ba2;
+            animation: pop 0.3s ease;
+        }
+
+        @keyframes pop {
+            0% { transform: scale(0); }
+            50% { transform: scale(1.2); }
+            100% { transform: scale(1); }
+        }
+
+        .info {
+            text-align: center;
+            font-size: 1.2em;
+            margin: 20px 0;
+            color: #333;
+            font-weight: bold;
+        }
+
+        .team-info {
+            background: #f8f9ff;
+            padding: 15px;
+            border-radius: 10px;
+            margin: 20px 0;
+            text-align: center;
+        }
+
+        .team-id {
+            font-size: 1.5em;
+            color: #667eea;
+            font-weight: bold;
+            margin: 10px 0;
+            word-break: break-all;
+        }
+
+        .status {
+            background: #fff3cd;
+            padding: 10px;
+            border-radius: 8px;
+            margin: 10px 0;
+            text-align: center;
+            color: #856404;
+        }
+
+        .winner {
+            background: #d4edda;
+            color: #155724;
+            padding: 15px;
+            border-radius: 10px;
+            text-align: center;
+            font-size: 1.3em;
+            font-weight: bold;
+            margin: 20px 0;
+            animation: celebration 0.5s ease;
+        }
+
+        @keyframes celebration {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+
+        .back-btn {
+            background: #6c757d;
+            margin-top: 20px;
+        }
+
+        .loading {
+            text-align: center;
+            color: #667eea;
+            margin: 20px 0;
+        }
+
+        .copy-btn {
+            background: #28a745;
+            padding: 8px 15px;
+            font-size: 0.9em;
+            margin-top: 10px;
+            display: inline-block;
+            width: auto;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎮 Tic-Tac-Toe</h1>
+
+        <div class="menu active" id="menu">
+            <button class="btn" onclick="showCreateGame()">Create New Game</button>
+            <button class="btn" onclick="showJoinGame()">Join Game</button>
+        </div>
+
+        <div class="menu" id="createMenu">
+            <div class="input-group">
+                <label>Your Name:</label>
+                <input type="text" id="createName" placeholder="Enter your name">
+            </div>
+            <button class="btn" onclick="createGame()">Create Game</button>
+            <button class="btn back-btn" onclick="showMainMenu()">Back</button>
+        </div>
+
+        <div class="menu" id="joinMenu">
+            <div class="input-group">
+                <label>Your Name:</label>
+                <input type="text" id="joinName" placeholder="Enter your name">
+            </div>
+            <div class="input-group">
+                <label>Team ID:</label>
+                <input type="text" id="teamId" placeholder="Enter team ID">
+            </div>
+            <button class="btn" onclick="joinGame()">Join Game</button>
+            <button class="btn back-btn" onclick="showMainMenu()">Back</button>
+        </div>
+
+        <div class="game-container" id="gameContainer">
+            <div class="team-info">
+                <div>Team ID:</div>
+                <div class="team-id" id="displayTeamId"></div>
+                <button class="btn copy-btn" onclick="copyTeamId()">📋 Copy ID</button>
+                <div style="font-size: 0.9em; color: #666; margin-top: 10px;">Share this ID with your friend!</div>
+            </div>
+
+            <div class="status" id="status">Waiting for opponent...</div>
+            
+            <div class="info" id="turnInfo"></div>
+
+            <div class="board" id="board"></div>
+
+            <div id="winnerDiv"></div>
+
+            <button class="btn" onclick="playAgain()" id="playAgainBtn" style="display:none;">Play Again</button>
+            <button class="btn back-btn" onclick="leaveGame()">Leave Game</button>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
+        import { getDatabase, ref, set, get, onValue, update, remove } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js';
+
+        // Firebase configuration - REPLACE WITH YOUR OWN CONFIG
+        const firebaseConfig = {
+            apiKey: "AIzaSyBXvH_7QZxH-6QYh8xVNXKWJj3LKvUmD3o",
+            authDomain: "tictactoe-multiplayer-demo.firebaseapp.com",
+            databaseURL: "https://tictactoe-multiplayer-demo-default-rtdb.firebaseio.com",
+            projectId: "tictactoe-multiplayer-demo",
+            storageBucket: "tictactoe-multiplayer-demo.appspot.com",
+            messagingSenderId: "123456789012",
+            appId: "1:123456789012:web:abcdef123456"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const database = getDatabase(app);
+
+        let currentGameId = null;
+        let playerSymbol = null;
+        let playerName = null;
+        let gameListener = null;
+
+        // Initialize board
+        function initBoard() {
+            const board = document.getElementById('board');
+            board.innerHTML = '';
+            for (let i = 0; i < 9; i++) {
+                const cell = document.createElement('div');
+                cell.className = 'cell';
+                cell.dataset.index = i;
+                cell.onclick = () => makeMove(i);
+                board.appendChild(cell);
+            }
+        }
+
+        // Show/hide menus
+        window.showMainMenu = function() {
+            document.querySelectorAll('.menu, .game-container').forEach(el => el.classList.remove('active'));
+            document.getElementById('menu').classList.add('active');
+        };
+
+        window.showCreateGame = function() {
+            document.querySelectorAll('.menu').forEach(el => el.classList.remove('active'));
+            document.getElementById('createMenu').classList.add('active');
+        };
+
+        window.showJoinGame = function() {
+            document.querySelectorAll('.menu').forEach(el => el.classList.remove('active'));
+            document.getElementById('joinMenu').classList.add('active');
+        };
+
+        // Generate game ID
+        function generateGameId() {
+            return Math.random().toString(36).substring(2, 8).toUpperCase();
+        }
+
+        // Create game
+        window.createGame = async function() {
+            const name = document.getElementById('createName').value.trim();
+            if (!name) {
+                alert('Please enter your name');
+                return;
+            }
+
+            playerName = name;
+            playerSymbol = 'X';
+            currentGameId = generateGameId();
+
+            const gameData = {
+                board: ['', '', '', '', '', '', '', '', ''],
+                currentTurn: 'X',
+                players: {
+                    X: { name: playerName, connected: true }
+                },
+                status: 'waiting',
+                winner: null,
+                createdAt: Date.now()
+            };
+
+            try {
+                await set(ref(database, 'games/' + currentGameId), gameData);
+                startListening(currentGameId);
+                showGame(currentGameId);
+            } catch (error) {
+                alert('Error creating game: ' + error.message);
+            }
+        };
+
+        // Join game
+        window.joinGame = async function() {
+            const name = document.getElementById('joinName').value.trim();
+            const teamId = document.getElementById('teamId').value.trim().toUpperCase();
+
+            if (!name || !teamId) {
+                alert('Please enter both name and team ID');
+                return;
+            }
+
+            try {
+                const gameRef = ref(database, 'games/' + teamId);
+                const snapshot = await get(gameRef);
+
+                if (!snapshot.exists()) {
+                    alert('Game not found! Check the team ID.');
+                    return;
+                }
+
+                const game = snapshot.val();
+
+                if (game.players.O) {
+                    alert('This game is already full!');
+                    return;
+                }
+
+                playerName = name;
+                playerSymbol = 'O';
+                currentGameId = teamId;
+
+                await update(gameRef, {
+                    'players/O': { name: playerName, connected: true },
+                    status: 'playing'
+                });
+
+                startListening(teamId);
+                showGame(teamId);
+            } catch (error) {
+                alert('Error joining game: ' + error.message);
+            }
+        };
+
+        // Show game
+        function showGame(gameId) {
+            document.querySelectorAll('.menu').forEach(el => el.classList.remove('active'));
+            document.getElementById('gameContainer').classList.add('active');
+            document.getElementById('displayTeamId').textContent = gameId;
+            initBoard();
+        }
+
+        // Make move
+        window.makeMove = async function(index) {
+            if (!currentGameId) return;
+
+            try {
+                const gameRef = ref(database, 'games/' + currentGameId);
+                const snapshot = await get(gameRef);
+                const game = snapshot.val();
+
+                if (!game || game.status !== 'playing') return;
+                if (game.currentTurn !== playerSymbol) return;
+                if (game.board[index]) return;
+
+                const newBoard = [...game.board];
+                newBoard[index] = playerSymbol;
+
+                const winner = checkWinner(newBoard);
+                const updates = {
+                    board: newBoard,
+                    currentTurn: playerSymbol === 'X' ? 'O' : 'X'
+                };
+
+                if (winner) {
+                    updates.status = 'finished';
+                    updates.winner = winner;
+                } else if (!newBoard.includes('')) {
+                    updates.status = 'finished';
+                    updates.winner = 'draw';
+                }
+
+                await update(gameRef, updates);
+            } catch (error) {
+                console.error('Error making move:', error);
+            }
+        };
+
+        // Check winner
+        function checkWinner(board) {
+            const lines = [
+                [0, 1, 2], [3, 4, 5], [6, 7, 8],
+                [0, 3, 6], [1, 4, 7], [2, 5, 8],
+                [0, 4, 8], [2, 4, 6]
+            ];
+
+            for (const [a, b, c] of lines) {
+                if (board[a] && board[a] === board[b] && board[a] === board[c]) {
+                    return board[a];
+                }
+            }
+            return null;
+        }
+
+        // Update UI
+        function updateUI(game) {
+            const status = document.getElementById('status');
+            const turnInfo = document.getElementById('turnInfo');
+            const winnerDiv = document.getElementById('winnerDiv');
+            const playAgainBtn = document.getElementById('playAgainBtn');
+
+            // Update board
+            game.board.forEach((cell, i) => {
+                const cellEl = document.querySelector(`[data-index="${i}"]`);
+                if (cell) {
+                    cellEl.textContent = cell;
+                    cellEl.classList.add('taken', cell.toLowerCase());
+                } else {
+                    cellEl.textContent = '';
+                    cellEl.classList.remove('taken', 'x', 'o');
+                }
+            });
+
+            // Update status
+            if (game.status === 'waiting') {
+                status.textContent = 'Waiting for opponent to join...';
+                status.style.display = 'block';
+                turnInfo.textContent = '';
+                winnerDiv.innerHTML = '';
+                playAgainBtn.style.display = 'none';
+            } else if (game.status === 'playing') {
+                status.style.display = 'none';
+                const currentPlayer = game.players[game.currentTurn];
+                if (game.currentTurn === playerSymbol) {
+                    turnInfo.textContent = '🟢 Your Turn!';
+                    turnInfo.style.color = '#28a745';
+                } else {
+                    turnInfo.textContent = `⏳ ${currentPlayer.name}'s Turn`;
+                    turnInfo.style.color = '#666';
+                }
+                winnerDiv.innerHTML = '';
+                playAgainBtn.style.display = 'none';
+            } else if (game.status === 'finished') {
+                status.style.display = 'none';
+                turnInfo.textContent = '';
+                if (game.winner === 'draw') {
+                    winnerDiv.innerHTML = '<div class="winner">🤝 It\'s a Draw!</div>';
+                } else if (game.winner === playerSymbol) {
+                    winnerDiv.innerHTML = '<div class="winner">🎉 You Won!</div>';
+                } else {
+                    winnerDiv.innerHTML = '<div class="winner">😔 You Lost!</div>';
+                }
+                playAgainBtn.style.display = 'block';
+            }
+        }
+
+        // Listen for changes
+        function startListening(gameId) {
+            if (gameListener) {
+                gameListener();
+            }
+
+            const gameRef = ref(database, 'games/' + gameId);
+            gameListener = onValue(gameRef, (snapshot) => {
+                if (snapshot.exists()) {
+                    updateUI(snapshot.val());
+                }
+            });
+        }
+
+        // Play again
+        window.playAgain = async function() {
+            if (!currentGameId) return;
+
+            try {
+                const gameRef = ref(database, 'games/' + currentGameId);
+                await update(gameRef, {
+                    board: ['', '', '', '', '', '', '', '', ''],
+                    currentTurn: 'X',
+                    status: 'playing',
+                    winner: null
+                });
+            } catch (error) {
+                console.error('Error resetting game:', error);
+            }
+        };
+
+        // Copy team ID
+        window.copyTeamId = function() {
+            const teamId = document.getElementById('displayTeamId').textContent;
+            navigator.clipboard.writeText(teamId).then(() => {
+                alert('Team ID copied to clipboard!');
+            }).catch(() => {
+                alert('Team ID: ' + teamId);
+            });
+        };
+
+        // Leave game
+        window.leaveGame = async function() {
+            if (gameListener) {
+                gameListener();
+                gameListener = null;
+            }
+
+            if (currentGameId) {
+                try {
+                    await remove(ref(database, 'games/' + currentGameId));
+                } catch (error) {
+                    console.error('Error leaving game:', error);
+                }
+            }
+
+            currentGameId = null;
+            playerSymbol = null;
+            playerName = null;
+            showMainMenu();
+        };
+
+        // Clean up old games on load
+        window.addEventListener('load', async () => {
+            try {
+                const gamesRef = ref(database, 'games');
+                const snapshot = await get(gamesRef);
+                if (snapshot.exists()) {
+                    const games = snapshot.val();
+                    const now = Date.now();
+                    const oneHour = 60 * 60 * 1000;
+
+                    for (const [gameId, game] of Object.entries(games)) {
+                        if (now - game.createdAt > oneHour) {
+                            await remove(ref(database, 'games/' + gameId));
+                        }
+                    }
+                }
+            } catch (error) {
+                console.error('Error cleaning old games:', error);
+            }
+        });
+    </script>
+</body>
+</html>
